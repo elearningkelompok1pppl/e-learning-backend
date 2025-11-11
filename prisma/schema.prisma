@@ -11,149 +11,153 @@ datasource db {
 }
 
 model admin {
-  id           Int      @id @default(autoincrement())
-  nama         String
-  email        String   @unique
-  password     String
-  role         String   @default("Admin")
-  foto_profil  String?
-  created_at   DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  nama        String
+  email       String   @unique
+  password    String
+  role        String   @default("Admin")
+  foto_profil String?
+  status      String   @default("Aktif")
+  created_at  DateTime @default(now())
 
-  berita       berita[]
+  // Relasi
+  berita         berita[]
   video_kegiatan video_kegiatan[]
 }
 
 model jurusan {
-  id             Int       @id @default(autoincrement())
-  kode_jurusan   String    @unique
-  nama_jurusan   String
-  deskripsi      String?
-  visi           String?
-  misi           String?
-  prospek_kerja  String?
-  foto_jurusan   String?
-  status         String    @default("Aktif")
-  created_at     DateTime  @default(now())
+  id            Int      @id @default(autoincrement())
+  kode_jurusan  String   @unique
+  nama_jurusan  String
+  deskripsi     String?
+  visi          String?
+  misi          String?
+  prospek_kerja String?
+  foto_jurusan  String?
+  status        String   @default("Aktif")
+  created_at    DateTime @default(now())
 
-  kelas          kelas[]
-  murid          murid[]
-  mata_pelajaran mata_pelajaran[]
-  video_kegiatan video_kegiatan[]
+  kelas           kelas[]
+  murid           murid[]
+  mata_pelajaran  mata_pelajaran[]
+  video_kegiatan  video_kegiatan[]
   partner_jurusan partner_jurusan[]
-  pkl            pkl[]
+  pkl             pkl[]
 }
 
 model guru {
-  id             Int      @id @default(autoincrement())
-  nip            String?  @unique
-  nama           String
-  email          String   @unique
-  password       String
-
+  id                  Int      @id @default(autoincrement())
+  nip                 String?  @unique
+  nama                String
+  email               String   @unique
+  password            String
+  role                String   @default("Guru") // 👈 tambahkan role agar bisa dibedakan di JWT
   mata_pelajaran_text String?
-  foto_profil    String?
-  no_telepon     String?
-  alamat         String?
-  status         String   @default("Aktif")
-  created_at     DateTime @default(now())
+  foto_profil         String?
+  no_telepon          String?
+  alamat              String?
+  status              String   @default("Aktif")
+  created_at          DateTime @default(now())
 
-  kelas          kelas[]    @relation("wali_kelas")
-  murid_verified murid[]    @relation("guru_verifikasi")
-  mata_pelajaran mata_pelajaran[]  
-  materi         materi[]
-  quiz           quiz[]
-  pkl            pkl[]      @relation("pembimbing_sekolah")
-  absensi        absensi[]
-  tugas          tugas[]
-  pengumpulan_tugas pengumpulan_tugas[] @relation("dinilai_oleh")
-  nilai_ujian    nilai_ujian[]
-  rapor          rapor[]
-  catatan_guru   catatan_guru[]
-  laporan_performa laporan_performa[] 
-  notifikasi_guru notifikasi_guru[]
+  // Relasi
+  kelas               kelas[]               @relation("wali_kelas")
+  murid_verified      murid[]               @relation("guru_verifikasi")
+  mata_pelajaran      mata_pelajaran[]
+  materi              materi[]
+  quiz                quiz[]
+  pkl                 pkl[]                 @relation("pembimbing_sekolah")
+  absensi             absensi[]
+  tugas               tugas[]
+  pengumpulan_tugas   pengumpulan_tugas[]   @relation("dinilai_oleh")
+  nilai_ujian         nilai_ujian[]
+  rapor               rapor[]
+  catatan_guru        catatan_guru[]
+  laporan_performa    laporan_performa[]
+  notifikasi_guru     notifikasi_guru[]
   target_pembelajaran target_pembelajaran[]
 }
 
-
 model kelas {
-  id             Int      @id @default(autoincrement())
-  nama_kelas     String
-  tingkat        String
-  jurusan_id     Int
-  tahun_ajaran   String
-  wali_kelas_id  Int?
-  kapasitas      Int?     @default(36)
-  created_at     DateTime @default(now())
+  id            Int      @id @default(autoincrement())
+  nama_kelas    String
+  tingkat       String
+  jurusan_id    Int
+  tahun_ajaran  String
+  wali_kelas_id Int?
+  kapasitas     Int?     @default(36)
+  created_at    DateTime @default(now())
 
-  jurusan        jurusan  @relation(fields: [jurusan_id], references: [id])
-  wali_kelas     guru?    @relation("wali_kelas", fields: [wali_kelas_id], references: [id])
-  murid          murid[]
-  materi         materi[]
-  quiz           quiz[]
-  tugas          tugas[]
-  absensi        absensi[]
-  nilai_ujian    nilai_ujian[]
-  rapor          rapor[]
-  laporan_performa laporan_performa[]
+  jurusan             jurusan               @relation(fields: [jurusan_id], references: [id])
+  wali_kelas          guru?                 @relation("wali_kelas", fields: [wali_kelas_id], references: [id])
+  murid               murid[]
+  materi              materi[]
+  quiz                quiz[]
+  tugas               tugas[]
+  absensi             absensi[]
+  nilai_ujian         nilai_ujian[]
+  rapor               rapor[]
+  laporan_performa    laporan_performa[]
   target_pembelajaran target_pembelajaran[]
 }
 
 model murid {
-  id               Int      @id @default(autoincrement())
-  nis              String?  @unique
-  nisn             String?  @unique
-  nama             String
-  email            String   @unique
-  password         String
-  kelas_id         Int?
-  jurusan_id       Int?
-  foto_profil      String?
-  tanggal_lahir    DateTime?
-  jenis_kelamin    String?
-  no_telepon       String?
-  alamat           String?
-  nama_ortu        String?
-  no_telepon_ortu  String?
-  is_verified      Boolean  @default(false)
-  verified_by      Int?
-  status           String   @default("Aktif")
-  created_at       DateTime @default(now())
+  id              Int       @id @default(autoincrement())
+  nis             String?   @unique
+  nisn            String?   @unique
+  nama            String
+  email           String    @unique
+  password        String
+  role            String    @default("Murid") // 👈 tambahkan role agar login seragam
+  kelas_id        Int?
+  jurusan_id      Int?
+  foto_profil     String?
+  tanggal_lahir   DateTime?
+  jenis_kelamin   String?
+  no_telepon      String?
+  alamat          String?
+  nama_ortu       String?
+  no_telepon_ortu String?
+  is_verified     Boolean   @default(false)
+  verified_by     Int?
+  status          String    @default("Aktif")
+  created_at      DateTime  @default(now())
 
-  kelas            kelas?   @relation(fields: [kelas_id], references: [id])
-  jurusan          jurusan? @relation(fields: [jurusan_id], references: [id])
-  guru_verified    guru?    @relation("guru_verifikasi", fields: [verified_by], references: [id])
-  hasil_quiz       hasil_quiz[]
-  preferensi_murid preferensi_murid?
-  absensi          absensi[]
+  // Relasi
+  kelas             kelas?              @relation(fields: [kelas_id], references: [id])
+  jurusan           jurusan?            @relation(fields: [jurusan_id], references: [id])
+  guru_verified     guru?               @relation("guru_verifikasi", fields: [verified_by], references: [id])
+  hasil_quiz        hasil_quiz[]
+  preferensi_murid  preferensi_murid?
+  absensi           absensi[]
   pengumpulan_tugas pengumpulan_tugas[]
-  nilai_ujian      nilai_ujian[]
-  rapor            rapor[]
-  pkl              pkl[]
+  nilai_ujian       nilai_ujian[]
+  rapor             rapor[]
+  pkl               pkl[]
   aktivitas_belajar aktivitas_belajar[]
-  laporan_performa  laporan_performa[] @relation("murid_terbaik")
+  laporan_performa  laporan_performa[]  @relation("murid_terbaik")
   catatan_guru      catatan_guru[]
 }
 
 model partner {
-  id                     Int      @id @default(autoincrement())
-  nama_perusahaan        String
-  bidang_usaha           String?
-  alamat                 String?
-  no_telepon             String?
-  email                  String?
-  website                String?
-  logo_perusahaan        String?
-  pic_nama               String?
-  pic_jabatan            String?
-  pic_telepon            String?
-  deskripsi              String?
-  status_kerjasama       String?  @default("Aktif")
+  id                      Int       @id @default(autoincrement())
+  nama_perusahaan         String
+  bidang_usaha            String?
+  alamat                  String?
+  no_telepon              String?
+  email                   String?
+  website                 String?
+  logo_perusahaan         String?
+  pic_nama                String?
+  pic_jabatan             String?
+  pic_telepon             String?
+  deskripsi               String?
+  status_kerjasama        String?   @default("Aktif")
   tanggal_mulai_kerjasama DateTime?
   tanggal_akhir_kerjasama DateTime?
-  created_at             DateTime @default(now())
+  created_at              DateTime  @default(now())
 
-  partner_jurusan        partner_jurusan[]
-  pkl                    pkl[]
+  partner_jurusan partner_jurusan[]
+  pkl             pkl[]
 }
 
 model partner_jurusan {
@@ -164,136 +168,136 @@ model partner_jurusan {
   deskripsi       String?
   created_at      DateTime @default(now())
 
-  partner         partner  @relation(fields: [partner_id], references: [id])
-  jurusan         jurusan  @relation(fields: [jurusan_id], references: [id])
+  partner partner @relation(fields: [partner_id], references: [id])
+  jurusan jurusan @relation(fields: [jurusan_id], references: [id])
 }
 
 model berita {
-  id             Int      @id @default(autoincrement())
-  judul          String
-  slug           String   @unique
-  konten         String
-  kategori       String?  @default("Pengumuman")
-  gambar_utama   String?
-  penulis_id     Int?
-  penulis_tipe   String?  @default("Admin")
-  status         String?  @default("Draft")
-  views          Int?     @default(0)
+  id              Int       @id @default(autoincrement())
+  judul           String
+  slug            String    @unique
+  konten          String
+  kategori        String?   @default("Pengumuman")
+  gambar_utama    String?
+  penulis_id      Int?
+  penulis_tipe    String?   @default("Admin")
+  status          String?   @default("Draft")
+  views           Int?      @default(0)
   tanggal_publish DateTime?
-  created_at     DateTime @default(now())
-  updated_at     DateTime @default(now())
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @default(now())
 
-  admin          admin?   @relation(fields: [penulis_id], references: [id])
+  admin admin? @relation(fields: [penulis_id], references: [id])
 }
 
 model video_kegiatan {
-  id           Int      @id @default(autoincrement())
-  judul        String
-  deskripsi    String?
-  youtube_url  String
-  youtube_id   String?
-  kategori     String?  @default("Kegiatan")
-  jurusan_id   Int?
-  thumbnail    String?
-  views        Int?     @default(0)
-  uploaded_by  Int?
-  status       String?  @default("Active")
-  created_at   DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  judul       String
+  deskripsi   String?
+  youtube_url String
+  youtube_id  String?
+  kategori    String?  @default("Kegiatan")
+  jurusan_id  Int?
+  thumbnail   String?
+  views       Int?     @default(0)
+  uploaded_by Int?
+  status      String?  @default("Active")
+  created_at  DateTime @default(now())
 
-  jurusan      jurusan? @relation(fields: [jurusan_id], references: [id])
-  admin        admin?   @relation(fields: [uploaded_by], references: [id])
+  jurusan jurusan? @relation(fields: [jurusan_id], references: [id])
+  admin   admin?   @relation(fields: [uploaded_by], references: [id])
 }
 
 model mata_pelajaran {
-  id               Int      @id @default(autoincrement())
-  kode_mapel       String?  @unique
-  nama_mapel       String
-  deskripsi        String?
-  kategori         String?  @default("Umum")
-  tingkat_kesulitan String? @default("Pemula")
-  jurusan_id       Int?
-  guru_id          Int?
-  created_at       DateTime @default(now())
+  id                Int      @id @default(autoincrement())
+  kode_mapel        String?  @unique
+  nama_mapel        String
+  deskripsi         String?
+  kategori          String?  @default("Umum")
+  tingkat_kesulitan String?  @default("Pemula")
+  jurusan_id        Int?
+  guru_id           Int?
+  created_at        DateTime @default(now())
 
-  jurusan          jurusan? @relation(fields: [jurusan_id], references: [id])
-  guru             guru?    @relation(fields: [guru_id], references: [id])
-  materi           materi[]
-  quiz             quiz[]
-  hasil_quiz       hasil_quiz[]
-  nilai_ujian      nilai_ujian[]
-  rapor            rapor[]
+  jurusan             jurusan?              @relation(fields: [jurusan_id], references: [id])
+  guru                guru?                 @relation(fields: [guru_id], references: [id])
+  materi              materi[]
+  quiz                quiz[]
+  hasil_quiz          hasil_quiz[]
+  nilai_ujian         nilai_ujian[]
+  rapor               rapor[]
   target_pembelajaran target_pembelajaran[]
-  absensi          absensi[]
-  tugas            tugas[]
-  laporan_performa laporan_performa[]
-  catatan_guru     catatan_guru[]
+  absensi             absensi[]
+  tugas               tugas[]
+  laporan_performa    laporan_performa[]
+  catatan_guru        catatan_guru[]
 }
 
 model materi {
-  id               Int      @id @default(autoincrement())
-  judul            String
-  konten           String
-  file_materi      String?
-  tipe_file        String?
+  id                Int      @id @default(autoincrement())
+  judul             String
+  konten            String
+  file_materi       String?
+  tipe_file         String?
   mata_pelajaran_id Int?
-  guru_id          Int?
-  kelas_id         Int?
-  created_at       DateTime @default(now())
+  guru_id           Int?
+  kelas_id          Int?
+  created_at        DateTime @default(now())
 
-  mata_pelajaran   mata_pelajaran? @relation(fields: [mata_pelajaran_id], references: [id])
-  guru             guru?           @relation(fields: [guru_id], references: [id])
-  kelas            kelas?          @relation(fields: [kelas_id], references: [id])
+  mata_pelajaran mata_pelajaran? @relation(fields: [mata_pelajaran_id], references: [id])
+  guru           guru?           @relation(fields: [guru_id], references: [id])
+  kelas          kelas?          @relation(fields: [kelas_id], references: [id])
 }
 
 model quiz {
-  id               Int      @id @default(autoincrement())
-  judul            String
-  deskripsi        String?
+  id                Int       @id @default(autoincrement())
+  judul             String
+  deskripsi         String?
   mata_pelajaran_id Int?
-  kelas_id         Int?
-  guru_id          Int?
-  durasi           Int?
-  tanggal_mulai    DateTime?
-  tanggal_selesai  DateTime?
-  status           String?  @default("Draft")
-  created_at       DateTime @default(now())
+  kelas_id          Int?
+  guru_id           Int?
+  durasi            Int?
+  tanggal_mulai     DateTime?
+  tanggal_selesai   DateTime?
+  status            String?   @default("Draft")
+  created_at        DateTime  @default(now())
 
-  mata_pelajaran   mata_pelajaran? @relation(fields: [mata_pelajaran_id], references: [id])
-  kelas            kelas?          @relation(fields: [kelas_id], references: [id])
-  guru             guru?           @relation(fields: [guru_id], references: [id])
-  soal_quiz        soal_quiz[]
-  hasil_quiz       hasil_quiz[]
+  mata_pelajaran mata_pelajaran? @relation(fields: [mata_pelajaran_id], references: [id])
+  kelas          kelas?          @relation(fields: [kelas_id], references: [id])
+  guru           guru?           @relation(fields: [guru_id], references: [id])
+  soal_quiz      soal_quiz[]
+  hasil_quiz     hasil_quiz[]
 }
 
 model soal_quiz {
-  id              Int      @id @default(autoincrement())
-  quiz_id         Int
-  pertanyaan      String
-  pilihan_a       String
-  pilihan_b       String
-  pilihan_c       String
-  pilihan_d       String
-  jawaban_benar   String
-  bobot           Int?     @default(1)
+  id            Int    @id @default(autoincrement())
+  quiz_id       Int
+  pertanyaan    String
+  pilihan_a     String
+  pilihan_b     String
+  pilihan_c     String
+  pilihan_d     String
+  jawaban_benar String
+  bobot         Int?   @default(1)
 
-  quiz            quiz     @relation(fields: [quiz_id], references: [id])
+  quiz quiz @relation(fields: [quiz_id], references: [id])
 }
 
 model hasil_quiz {
-  id               Int      @id @default(autoincrement())
-  murid_id         Int?
-  quiz_id          Int?
+  id                Int       @id @default(autoincrement())
+  murid_id          Int?
+  quiz_id           Int?
   mata_pelajaran_id Int?
-  score            Float?
-  total_soal       Int?
-  jawaban_benar    Int?
-  waktu_mulai      DateTime?
-  waktu_selesai    DateTime?
-  created_at       DateTime @default(now())
+  score             Float?
+  total_soal        Int?
+  jawaban_benar     Int?
+  waktu_mulai       DateTime?
+  waktu_selesai     DateTime?
+  created_at        DateTime  @default(now())
 
-  murid            murid? @relation(fields: [murid_id], references: [id])
-  quiz             quiz?  @relation(fields: [quiz_id], references: [id])
-  mata_pelajaran   mata_pelajaran? @relation(fields: [mata_pelajaran_id], references: [id])
+  murid          murid?          @relation(fields: [murid_id], references: [id])
+  quiz           quiz?           @relation(fields: [quiz_id], references: [id])
+  mata_pelajaran mata_pelajaran? @relation(fields: [mata_pelajaran_id], references: [id])
 }
 
 model preferensi_murid {
@@ -307,94 +311,94 @@ model preferensi_murid {
   created_at             DateTime @default(now())
   updated_at             DateTime @default(now())
 
-  murid                  murid?   @relation(fields: [murid_id], references: [id])
+  murid murid? @relation(fields: [murid_id], references: [id])
 }
 
 model pkl {
-  id                   Int      @id @default(autoincrement())
-  murid_id             Int?
-  partner_id           Int?
-  jurusan_id           Int?
-  tanggal_mulai        DateTime?
-  tanggal_selesai      DateTime?
+  id                    Int       @id @default(autoincrement())
+  murid_id              Int?
+  partner_id            Int?
+  jurusan_id            Int?
+  tanggal_mulai         DateTime?
+  tanggal_selesai       DateTime?
   pembimbing_sekolah_id Int?
   pembimbing_industri   String?
-  nilai                Float?
-  keterangan           String?
-  status               String?  @default("Sedang Berjalan")
-  created_at           DateTime @default(now())
+  nilai                 Float?
+  keterangan            String?
+  status                String?   @default("Sedang Berjalan")
+  created_at            DateTime  @default(now())
 
-  murid                murid?   @relation(fields: [murid_id], references: [id])
-  partner              partner? @relation(fields: [partner_id], references: [id])
-  jurusan              jurusan? @relation(fields: [jurusan_id], references: [id])
-  pembimbing_sekolah   guru?    @relation("pembimbing_sekolah", fields: [pembimbing_sekolah_id], references: [id])
+  murid              murid?   @relation(fields: [murid_id], references: [id])
+  partner            partner? @relation(fields: [partner_id], references: [id])
+  jurusan            jurusan? @relation(fields: [jurusan_id], references: [id])
+  pembimbing_sekolah guru?    @relation("pembimbing_sekolah", fields: [pembimbing_sekolah_id], references: [id])
 }
 
 // ------------------------------ 
 // Tabel Absensi Murid
 model absensi {
-  id               Int      @id @default(autoincrement())
-  murid_id         Int?
-  kelas_id         Int?
+  id                Int      @id @default(autoincrement())
+  murid_id          Int?
+  kelas_id          Int?
   mata_pelajaran_id Int?
-  tanggal          DateTime
-  status           String
-  keterangan       String?
-  guru_id          Int?
-  created_at       DateTime @default(now())
+  tanggal           DateTime
+  status            String
+  keterangan        String?
+  guru_id           Int?
+  created_at        DateTime @default(now())
 
-  murid            murid?           @relation(fields: [murid_id], references: [id])
-  kelas            kelas?           @relation(fields: [kelas_id], references: [id])
-  mata_pelajaran   mata_pelajaran?  @relation(fields: [mata_pelajaran_id], references: [id])
-  guru             guru?            @relation(fields: [guru_id], references: [id])
+  murid          murid?          @relation(fields: [murid_id], references: [id])
+  kelas          kelas?          @relation(fields: [kelas_id], references: [id])
+  mata_pelajaran mata_pelajaran? @relation(fields: [mata_pelajaran_id], references: [id])
+  guru           guru?           @relation(fields: [guru_id], references: [id])
 }
 
 // ------------------------------ 
 // Tabel Tugas
 model tugas {
-  id               Int      @id @default(autoincrement())
-  judul            String
-  deskripsi        String?
+  id                Int       @id @default(autoincrement())
+  judul             String
+  deskripsi         String?
   mata_pelajaran_id Int?
-  kelas_id         Int?
-  guru_id          Int?
-  deadline         DateTime?
-  bobot            Int?     @default(100)
-  file_tugas       String?
-  status           String?  @default("Active")
-  created_at       DateTime @default(now())
+  kelas_id          Int?
+  guru_id           Int?
+  deadline          DateTime?
+  bobot             Int?      @default(100)
+  file_tugas        String?
+  status            String?   @default("Active")
+  created_at        DateTime  @default(now())
 
-  mata_pelajaran   mata_pelajaran? @relation(fields: [mata_pelajaran_id], references: [id])
-  kelas            kelas?          @relation(fields: [kelas_id], references: [id])
-  guru             guru?           @relation(fields: [guru_id], references: [id])
+  mata_pelajaran    mata_pelajaran?     @relation(fields: [mata_pelajaran_id], references: [id])
+  kelas             kelas?              @relation(fields: [kelas_id], references: [id])
+  guru              guru?               @relation(fields: [guru_id], references: [id])
   pengumpulan_tugas pengumpulan_tugas[]
 }
 
 // ------------------------------ 
 // Tabel Pengumpulan Tugas
 model pengumpulan_tugas {
-  id                 Int      @id @default(autoincrement())
-  tugas_id           Int?
-  murid_id           Int?
-  file_jawaban       String?
-  keterangan         String?
-  nilai              Float?
-  feedback           String?
-  status             String?  @default("Belum Dinilai")
-  waktu_pengumpulan  DateTime?
-  dinilai_oleh       Int?
-  dinilai_pada       DateTime?
-  created_at         DateTime @default(now())
+  id                Int       @id @default(autoincrement())
+  tugas_id          Int?
+  murid_id          Int?
+  file_jawaban      String?
+  keterangan        String?
+  nilai             Float?
+  feedback          String?
+  status            String?   @default("Belum Dinilai")
+  waktu_pengumpulan DateTime?
+  dinilai_oleh      Int?
+  dinilai_pada      DateTime?
+  created_at        DateTime  @default(now())
 
-  tugas              tugas?   @relation(fields: [tugas_id], references: [id])
-  murid              murid?   @relation(fields: [murid_id], references: [id])
-  guru               guru?    @relation("dinilai_oleh", fields: [dinilai_oleh], references: [id])
+  tugas tugas? @relation(fields: [tugas_id], references: [id])
+  murid murid? @relation(fields: [murid_id], references: [id])
+  guru  guru?  @relation("dinilai_oleh", fields: [dinilai_oleh], references: [id])
 }
 
 // ------------------------------ 
 // Tabel Nilai Ujian/UTS/UAS
 model nilai_ujian {
-  id                Int      @id @default(autoincrement())
+  id                Int       @id @default(autoincrement())
   murid_id          Int?
   mata_pelajaran_id Int?
   kelas_id          Int?
@@ -405,12 +409,12 @@ model nilai_ujian {
   keterangan        String?
   guru_id           Int?
   tanggal_ujian     DateTime?
-  created_at        DateTime @default(now())
+  created_at        DateTime  @default(now())
 
-  murid             murid?           @relation(fields: [murid_id], references: [id])
-  mata_pelajaran    mata_pelajaran?  @relation(fields: [mata_pelajaran_id], references: [id])
-  kelas             kelas?           @relation(fields: [kelas_id], references: [id])
-  guru              guru?            @relation(fields: [guru_id], references: [id])
+  murid          murid?          @relation(fields: [murid_id], references: [id])
+  mata_pelajaran mata_pelajaran? @relation(fields: [mata_pelajaran_id], references: [id])
+  kelas          kelas?          @relation(fields: [kelas_id], references: [id])
+  guru           guru?           @relation(fields: [guru_id], references: [id])
 }
 
 // ------------------------------ 
@@ -434,10 +438,10 @@ model rapor {
   created_at        DateTime @default(now())
   updated_at        DateTime @default(now())
 
-  murid             murid?           @relation(fields: [murid_id], references: [id])
-  mata_pelajaran    mata_pelajaran?  @relation(fields: [mata_pelajaran_id], references: [id])
-  kelas             kelas?           @relation(fields: [kelas_id], references: [id])
-  guru              guru?            @relation(fields: [guru_id], references: [id])
+  murid          murid?          @relation(fields: [murid_id], references: [id])
+  mata_pelajaran mata_pelajaran? @relation(fields: [mata_pelajaran_id], references: [id])
+  kelas          kelas?          @relation(fields: [kelas_id], references: [id])
+  guru           guru?           @relation(fields: [guru_id], references: [id])
 }
 
 // ------------------------------ 
@@ -450,69 +454,69 @@ model aktivitas_belajar {
   durasi            Int?
   tanggal_aktivitas DateTime @default(now())
 
-  murid             murid?   @relation(fields: [murid_id], references: [id])
+  murid murid? @relation(fields: [murid_id], references: [id])
 }
 
 // ------------------------------ 
 // Tabel Laporan Performa Kelas
 model laporan_performa {
-  id                    Int      @id @default(autoincrement())
-  kelas_id              Int?
-  mata_pelajaran_id     Int?
-  guru_id               Int?
-  periode               String
-  bulan                 Int?
-  semester              String?
-  tahun_ajaran          String
-  total_murid           Int?
-  rata_rata_nilai       Float?
-  rata_rata_kehadiran   Float?
-  total_tugas_diberikan Int?
+  id                     Int      @id @default(autoincrement())
+  kelas_id               Int?
+  mata_pelajaran_id      Int?
+  guru_id                Int?
+  periode                String
+  bulan                  Int?
+  semester               String?
+  tahun_ajaran           String
+  total_murid            Int?
+  rata_rata_nilai        Float?
+  rata_rata_kehadiran    Float?
+  total_tugas_diberikan  Int?
   persentase_pengumpulan Float?
-  total_quiz_diberikan  Int?
-  rata_rata_quiz        Float?
-  murid_terbaik_id      Int?
-  murid_perlu_bimbingan String?
-  catatan               String?
-  generated_at          DateTime @default(now())
+  total_quiz_diberikan   Int?
+  rata_rata_quiz         Float?
+  murid_terbaik_id       Int?
+  murid_perlu_bimbingan  String?
+  catatan                String?
+  generated_at           DateTime @default(now())
 
-  kelas                 kelas?           @relation(fields: [kelas_id], references: [id])
-  mata_pelajaran        mata_pelajaran?  @relation(fields: [mata_pelajaran_id], references: [id])
-  guru                  guru?            @relation(fields: [guru_id], references: [id])
-  murid_terbaik         murid?           @relation("murid_terbaik", fields: [murid_terbaik_id], references: [id])
+  kelas          kelas?          @relation(fields: [kelas_id], references: [id])
+  mata_pelajaran mata_pelajaran? @relation(fields: [mata_pelajaran_id], references: [id])
+  guru           guru?           @relation(fields: [guru_id], references: [id])
+  murid_terbaik  murid?          @relation("murid_terbaik", fields: [murid_terbaik_id], references: [id])
 }
 
 // ------------------------------ 
 // Tabel Catatan Guru
 model catatan_guru {
-  id                Int      @id @default(autoincrement())
+  id                Int       @id @default(autoincrement())
   murid_id          Int?
   guru_id           Int?
   mata_pelajaran_id Int?
-  kategori          String?  @default("Akademik")
+  kategori          String?   @default("Akademik")
   catatan           String
-  is_private        Boolean  @default(false)
+  is_private        Boolean   @default(false)
   tanggal_catatan   DateTime?
-  created_at        DateTime @default(now())
+  created_at        DateTime  @default(now())
 
-  murid             murid?           @relation(fields: [murid_id], references: [id])
-  guru              guru?            @relation(fields: [guru_id], references: [id])
-  mata_pelajaran    mata_pelajaran?  @relation(fields: [mata_pelajaran_id], references: [id])
+  murid          murid?          @relation(fields: [murid_id], references: [id])
+  guru           guru?           @relation(fields: [guru_id], references: [id])
+  mata_pelajaran mata_pelajaran? @relation(fields: [mata_pelajaran_id], references: [id])
 }
 
 // ------------------------------ 
 // Tabel Notifikasi Guru
 model notifikasi_guru {
-  id          Int      @id @default(autoincrement())
-  guru_id     Int?
-  judul       String
-  pesan       String
-  tipe        String?  @default("Sistem")
-  is_read     Boolean  @default(false)
-  link        String?
-  created_at  DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  guru_id    Int?
+  judul      String
+  pesan      String
+  tipe       String?  @default("Sistem")
+  is_read    Boolean  @default(false)
+  link       String?
+  created_at DateTime @default(now())
 
-  guru        guru?    @relation(fields: [guru_id], references: [id])
+  guru guru? @relation(fields: [guru_id], references: [id])
 }
 
 // ------------------------------ 
@@ -534,7 +538,7 @@ model target_pembelajaran {
   created_at           DateTime @default(now())
   updated_at           DateTime @default(now())
 
-  guru                 guru?            @relation(fields: [guru_id], references: [id])
-  mata_pelajaran       mata_pelajaran?  @relation(fields: [mata_pelajaran_id], references: [id])
-  kelas                kelas?           @relation(fields: [kelas_id], references: [id])
+  guru           guru?           @relation(fields: [guru_id], references: [id])
+  mata_pelajaran mata_pelajaran? @relation(fields: [mata_pelajaran_id], references: [id])
+  kelas          kelas?          @relation(fields: [kelas_id], references: [id])
 }

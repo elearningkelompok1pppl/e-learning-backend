@@ -1,41 +1,36 @@
-# main.py
+# main.py — FastAPI + Prisma + JWT Authentication
 from fastapi import FastAPI
 from generated.prisma import Prisma
 
-# ===============================================================
-# 🚀 FastAPI Initialization
-# ===============================================================
+# FastAPI Initialization
 app = FastAPI(
-    title="Sekolah API - FastAPI + Prisma + Neon",
-    description="Sistem API Sekolah berbasis FastAPI + Prisma ORM dengan database PostgreSQL Neon Cloud",
-    version="1.0.0"
+    title="Sekolah API - FastAPI + Prisma + Neon + JWT Auth",
+    description="Sistem API Sekolah berbasis FastAPI + Prisma ORM dengan PostgreSQL Neon Cloud & JWT Authentication",
+    version="1.1.0"
 )
 
-# ===============================================================
-# 🗃️ Prisma Database Client (Single Shared Instance)
-# ===============================================================
+# Prisma Database Client (Single Shared Instance)
 db = Prisma()
 
 @app.on_event("startup")
 async def startup():
-    """Connect to the database on app startup."""
     await db.connect()
     print("✅ Connected to Neon Database!")
 
 @app.on_event("shutdown")
 async def shutdown():
-    """Disconnect database on app shutdown."""
     await db.disconnect()
     print("❌ Disconnected from Database.")
 
-
-# ===============================================================
-# 📦 Import Routers (after db instance created)
-# ===============================================================
+# Import Routers (Setelah db instance dibuat)
 # NOTE:
-#  Each route file should import db using:  `from main import db`
+#  Semua file route harus import db seperti ini:
+#  `from main import db`
 
-# Existing routes
+# --- Authentication Route (JWT) ---
+from routes.auth_routes import router as auth_router
+
+# --- Existing Routes ---
 from routes.admin_routes import router as admin_router
 from routes.guru_routes import router as guru_router
 from routes.jurusan_routes import router as jurusan_router
@@ -48,19 +43,19 @@ from routes.pkl_routes import router as pkl_router
 from routes.berita_routes import router as berita_router
 from routes.video_routes import router as video_router
 
-# ✅ New routes (baru ditambahkan)
+# --- New Routes Added ---
 from routes.materi_routes import router as materi_router
 from routes.quiz_routes import router as quiz_router
 from routes.soal_quiz_routes import router as soal_quiz_router
 from routes.hasil_quiz_routes import router as hasil_quiz_router
 
-
-
-# ===============================================================
 # 🔗 Register All Routers
-# ===============================================================
-# --- Existing ---
-app.include_router(admin_router, prefix="/admin", tags=["Admin"])
+
+# --- Authentication ---
+app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+
+# --- Core Data Routes ---
+app.include_router(admin_router)  # ✅ tanpa prefix lagi
 app.include_router(guru_router, prefix="/guru", tags=["Guru"])
 app.include_router(jurusan_router, prefix="/jurusan", tags=["Jurusan"])
 app.include_router(kelas_router, prefix="/kelas", tags=["Kelas"])
@@ -72,22 +67,20 @@ app.include_router(pkl_router, prefix="/pkl", tags=["PKL"])
 app.include_router(berita_router, prefix="/berita", tags=["Berita"])
 app.include_router(video_router, prefix="/video", tags=["Video"])
 
-# --- New Routes Added ---
+# --- Educational Content Routes ---
 app.include_router(materi_router, prefix="/materi", tags=["Materi"])
 app.include_router(quiz_router, prefix="/quiz", tags=["Quiz"])
 app.include_router(soal_quiz_router, prefix="/soal-quiz", tags=["Soal Quiz"])
 app.include_router(hasil_quiz_router, prefix="/hasil-quiz", tags=["Hasil Quiz"])
 
-
-# ===============================================================
-# 🏠 Root Endpoint
-# ===============================================================
+# Root Endpoint
 @app.get("/")
 def root():
     return {
         "message": "FastAPI + Prisma + Neon 🚀",
-        "status": "connected",
+        "auth": "/auth/login",
         "docs_url": "/docs",
+        "status": "connected",
         "author": "Fikhi Hakim",
         "project": "Sekolah API Backend",
     }
