@@ -6,7 +6,6 @@ from core.permissions import authorize_access
 from main import db
 
 router = APIRouter(
-    prefix="/berita",
     tags=["Berita"],
     dependencies=[Depends(authorize_access)]  
 )

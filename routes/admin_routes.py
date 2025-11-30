@@ -5,7 +5,6 @@ from core.permissions import authorize_access, check_permission
 from main import db
 
 router = APIRouter(
-    prefix="/admin",
     tags=["Admin"],
     dependencies=[Depends(authorize_access)]  
 )

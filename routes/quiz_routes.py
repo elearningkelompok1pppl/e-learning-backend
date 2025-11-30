@@ -7,7 +7,6 @@ from core.permissions import authorize_access
 from main import db
 
 router = APIRouter(
-    prefix="/quiz",
     tags=["Quiz"],
     dependencies=[Depends(authorize_access)]  # ✅ Semua endpoint butuh JWT
 )

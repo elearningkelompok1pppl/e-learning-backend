@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
-from fastapi import HTTPException, status
 from dotenv import load_dotenv
 import os
 
@@ -9,6 +10,7 @@ import os
 # 🔐 ENV & CONFIG
 # =====================================================
 load_dotenv()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 SECRET_KEY = os.getenv("SECRET_KEY", "supersecretkey123")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
@@ -81,3 +83,20 @@ def verify_access_token(token: str):
             detail="Token tidak valid",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    """
+    Extract user info from JWT Access Token
+    """
+    payload = verify_access_token(token)
+
+    if "sub" not in payload or "role" not in payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token tidak mengandung informasi user yang lengkap",
+        )
+
+    return {
+        "sub": payload["sub"],  
+        "role": payload["role"], 
+    }

@@ -21,6 +21,8 @@ ROLE_ACCESS = {
         "video",
         "pkl",
         "jurusan",
+        "dashboard_guru",
+        "cluster"
     ],
 
     # Murid: hanya bisa membaca data (read-only) di modul tertentu

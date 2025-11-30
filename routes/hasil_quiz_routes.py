@@ -7,7 +7,6 @@ from core.security import get_current_user
 from main import db
 
 router = APIRouter(
-    prefix="/hasil-quiz",
     tags=["Hasil Quiz"],
     dependencies=[Depends(authorize_access)]  # ✅ RBAC otomatis
 )

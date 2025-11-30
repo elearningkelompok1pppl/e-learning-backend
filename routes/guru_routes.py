@@ -6,7 +6,6 @@ from core.permissions import authorize_access, check_permission
 from main import db
 
 router = APIRouter(
-    prefix="/guru",
     tags=["Guru"],
     dependencies=[Depends(authorize_access)]  
 )

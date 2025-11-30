@@ -8,7 +8,6 @@ from core.permissions import authorize_access, check_permission
 from main import db
 
 router = APIRouter(
-    prefix="/mata-pelajaran",
     tags=["Mata Pelajaran"],
     dependencies=[Depends(authorize_access)]  # ✅ Semua endpoint butuh JWT
 )

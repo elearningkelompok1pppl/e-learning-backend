@@ -5,7 +5,6 @@ from core.permissions import authorize_access
 from main import db
 
 router = APIRouter(
-    prefix="/video",
     tags=["Video Kegiatan"],
     dependencies=[Depends(authorize_access)]  # ✅ Semua endpoint butuh JWT
 )

@@ -46,16 +46,17 @@ from routes.video_routes import router as video_router
 # --- New Routes Added ---
 from routes.materi_routes import router as materi_router
 from routes.quiz_routes import router as quiz_router
+from routes.cluster_routes import router as cluster_router
 from routes.soal_quiz_routes import router as soal_quiz_router
 from routes.hasil_quiz_routes import router as hasil_quiz_router
-
+from routes.dashboard_guru_routes import router as dashboard_guru_router
 # 🔗 Register All Routers
 
 # --- Authentication ---
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 
 # --- Core Data Routes ---
-app.include_router(admin_router)  # ✅ tanpa prefix lagi
+app.include_router(admin_router)  
 app.include_router(guru_router, prefix="/guru", tags=["Guru"])
 app.include_router(jurusan_router, prefix="/jurusan", tags=["Jurusan"])
 app.include_router(kelas_router, prefix="/kelas", tags=["Kelas"])
@@ -68,6 +69,8 @@ app.include_router(berita_router, prefix="/berita", tags=["Berita"])
 app.include_router(video_router, prefix="/video", tags=["Video"])
 
 # --- Educational Content Routes ---
+app.include_router(cluster_router, prefix="/cluster", tags=["Cluster"])
+app.include_router(dashboard_guru_router, prefix="/dashboard-guru", tags=["Dashboard Guru"])
 app.include_router(materi_router, prefix="/materi", tags=["Materi"])
 app.include_router(quiz_router, prefix="/quiz", tags=["Quiz"])
 app.include_router(soal_quiz_router, prefix="/soal-quiz", tags=["Soal Quiz"])
