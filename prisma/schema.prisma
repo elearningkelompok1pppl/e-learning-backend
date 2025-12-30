@@ -80,7 +80,7 @@ model guru {
 model kelas {
   id            Int      @id @default(autoincrement())
   nama_kelas    String
-  tingkat       String
+  tingkat       Int
   jurusan_id    Int
   tahun_ajaran  String
   wali_kelas_id Int?
