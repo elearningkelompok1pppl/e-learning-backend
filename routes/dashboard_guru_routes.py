@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from main import db
-from core.auth import get_current_user
+from core.security import get_current_user
 from core.permissions import authorize_access
 
 router = APIRouter(
@@ -14,47 +14,49 @@ async def guru_only(user=Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Akses khusus Guru")
     return user
 
-
 @router.get("/dashboard")
 async def get_dashboard_guru(user=Depends(guru_only)):
 
     guru_email = user["sub"]
-
-    # cari guru berdasarkan email
     guru = await db.guru.find_unique(where={"email": guru_email})
 
     if not guru:
         raise HTTPException(status_code=404, detail="Guru tidak ditemukan")
 
-    # jumlah murid di kelas bimbingan — FIX
+    guru_id = guru.id   # sekarang aman
+
     jumlah_murid = await db.murid.count(
-        where={"kelas_id": guru.id}   # ganti sesuai model kamu
+        where={"kelas": {"wali_kelas_id": guru_id}}
     )
 
-    # jumlah tugas dibuat oleh guru
+    jumlah_materi = await db.materi.count(
+        where={"guru_id": guru_id}
+    )
+
     jumlah_tugas = await db.tugas.count(
-        where={"guru_id": guru.id}
+        where={"guru_id": guru_id}
     )
 
-    # --- FIX PENENTUAN RATA-RATA NILAI (TANPA aggregate) ---
-    nilai_records = await db.nilai_ujian.find_many(
-        where={"guru_id": guru.id}
+    murid_pending = await db.murid.count(
+        where={"is_verified": False}
     )
 
-    if nilai_records:
-        total = sum([n.nilai for n in nilai_records if n.nilai is not None])
-        jumlah = len([n.nilai for n in nilai_records if n.nilai is not None])
-        rata_nilai = total / jumlah if jumlah > 0 else None
-    else:
-        rata_nilai = None
+    rapor_records = await db.rapor.find_many(
+        where={"guru_id": guru_id}
+    )
 
-    # rata-rata kehadiran murid
+    nilai_akhir_list = [r.nilai_akhir for r in rapor_records if r.nilai_akhir is not None]
+
+    rata_rata_nilai = (
+        sum(nilai_akhir_list)/len(nilai_akhir_list) if nilai_akhir_list else None
+    )
+
     hadir = await db.absensi.count(
-        where={"guru_id": guru.id, "status": "Hadir"}
+        where={"guru_id": guru_id, "status": "Hadir"}
     )
 
     total_absensi = await db.absensi.count(
-        where={"guru_id": guru.id}
+        where={"guru_id": guru_id}
     )
 
     persentase_kehadiran = (
@@ -64,7 +66,9 @@ async def get_dashboard_guru(user=Depends(guru_only)):
     return {
         "guru": guru.nama,
         "jumlah_murid": jumlah_murid,
+        "jumlah_materi": jumlah_materi,
         "jumlah_tugas": jumlah_tugas,
-        "rata_nilai": rata_nilai,
-        "kehadiran_percent": persentase_kehadiran
+        "murid_pending": murid_pending,
+        "rata_nilai": rata_rata_nilai,
+        "kehadiran": persentase_kehadiran
     }

@@ -1,12 +1,24 @@
 # main.py — FastAPI + Prisma + JWT Authentication
 from fastapi import FastAPI
 from generated.prisma import Prisma
+from fastapi.middleware.cors import CORSMiddleware 
 
 # FastAPI Initialization
 app = FastAPI(
     title="Sekolah API - FastAPI + Prisma + Neon + JWT Auth",
     description="Sistem API Sekolah berbasis FastAPI + Prisma ORM dengan PostgreSQL Neon Cloud & JWT Authentication",
     version="1.1.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],  
+    allow_headers=["*"],     
 )
 
 # Prisma Database Client (Single Shared Instance)
@@ -21,11 +33,6 @@ async def startup():
 async def shutdown():
     await db.disconnect()
     print("❌ Disconnected from Database.")
-
-# Import Routers (Setelah db instance dibuat)
-# NOTE:
-#  Semua file route harus import db seperti ini:
-#  `from main import db`
 
 # --- Authentication Route (JWT) ---
 from routes.auth_routes import router as auth_router
@@ -50,6 +57,7 @@ from routes.cluster_routes import router as cluster_router
 from routes.soal_quiz_routes import router as soal_quiz_router
 from routes.hasil_quiz_routes import router as hasil_quiz_router
 from routes.dashboard_guru_routes import router as dashboard_guru_router
+from routes.beranda_murid_routes import router as beranda_murid_router
 # 🔗 Register All Routers
 
 # --- Authentication ---
@@ -61,7 +69,7 @@ app.include_router(guru_router, prefix="/guru", tags=["Guru"])
 app.include_router(jurusan_router, prefix="/jurusan", tags=["Jurusan"])
 app.include_router(kelas_router, prefix="/kelas", tags=["Kelas"])
 app.include_router(murid_router, prefix="/murid", tags=["Murid"])
-app.include_router(mata_pelajaran_router, prefix="/mata-pelajaran", tags=["Mata Pelajaran"])
+app.include_router(mata_pelajaran_router, prefix="/guru/mata-pelajaran", tags=["Mata Pelajaran"])
 app.include_router(tugas_router, prefix="/tugas", tags=["Tugas"])
 app.include_router(absensi_router, prefix="/absensi", tags=["Absensi"])
 app.include_router(pkl_router, prefix="/pkl", tags=["PKL"])
@@ -75,6 +83,8 @@ app.include_router(materi_router, prefix="/materi", tags=["Materi"])
 app.include_router(quiz_router, prefix="/quiz", tags=["Quiz"])
 app.include_router(soal_quiz_router, prefix="/soal-quiz", tags=["Soal Quiz"])
 app.include_router(hasil_quiz_router, prefix="/hasil-quiz", tags=["Hasil Quiz"])
+app.include_router(beranda_murid_router, prefix="/beranda-murid")
+
 
 # Root Endpoint
 @app.get("/")

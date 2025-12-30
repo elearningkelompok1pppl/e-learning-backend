@@ -98,6 +98,7 @@ model kelas {
   rapor               rapor[]
   laporan_performa    laporan_performa[]
   target_pembelajaran target_pembelajaran[]
+  mata_pelajaran mata_pelajaran[]
 }
 
 model murid {
@@ -213,14 +214,20 @@ model mata_pelajaran {
   kode_mapel        String?  @unique
   nama_mapel        String
   deskripsi         String?
-  kategori          String?  @default("Umum")
-  tingkat_kesulitan String?  @default("Pemula")
+  kategori          String   @default("Umum")
+  tingkat_kesulitan String   @default("Pemula")
+
   jurusan_id        Int?
   guru_id           Int?
+  kelas_id          Int?     // ✅ BARU
+
   created_at        DateTime @default(now())
 
-  jurusan             jurusan?              @relation(fields: [jurusan_id], references: [id])
-  guru                guru?                 @relation(fields: [guru_id], references: [id])
+  // ================= RELATIONS =================
+  jurusan jurusan? @relation(fields: [jurusan_id], references: [id])
+  guru    guru?    @relation(fields: [guru_id], references: [id])
+  kelas   kelas?   @relation(fields: [kelas_id], references: [id]) // ✅ BARU
+
   materi              materi[]
   quiz                quiz[]
   hasil_quiz          hasil_quiz[]
@@ -232,6 +239,7 @@ model mata_pelajaran {
   laporan_performa    laporan_performa[]
   catatan_guru        catatan_guru[]
 }
+
 
 model materi {
   id                Int      @id @default(autoincrement())

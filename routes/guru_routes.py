@@ -1,121 +1,65 @@
-# routes/guru_routes.py — Manajemen Data Guru (RBAC Protected)
-
-from fastapi import APIRouter, HTTPException, Depends, status
-from pydantic import BaseModel, EmailStr, Field
-from core.permissions import authorize_access, check_permission
+from fastapi import APIRouter, Depends, HTTPException
 from main import db
+from core.permissions import authorize_access
 
 router = APIRouter(
     tags=["Guru"],
-    dependencies=[Depends(authorize_access)]  
+    dependencies=[Depends(authorize_access)]
 )
 
-# SCHEMA: Data Guru
-class GuruCreate(BaseModel):
-    nama: str = Field(..., description="Nama lengkap guru")
-    email: EmailStr = Field(..., description="Email unik guru")
-    password: str = Field(..., description="Password guru (akan di-hash saat pendaftaran)")
-    nip: str | None = Field(default=None, description="Nomor induk pegawai (opsional)")
-    mata_pelajaran_text: str | None = Field(default=None, description="Deskripsi mata pelajaran yang diampu")
-    foto_profil: str | None = Field(default=None, description="URL foto profil guru")
-    no_telepon: str | None = Field(default=None, description="Nomor telepon guru")
-    alamat: str | None = Field(default=None, description="Alamat lengkap guru")
-    status: str = Field(default="Aktif", description="Status keaktifan guru (Aktif / Nonaktif)")
+@router.get("/murid/pending")
+async def get_pending_murid(user=Depends(authorize_access)):
+    if user["role"] != "Guru":
+        raise HTTPException(status_code=403, detail="Akses ditolak")
 
-# CREATE — Tambah Guru Baru (Admin Only)
-@router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_guru(guru: GuruCreate, user=Depends(authorize_access)):
-    check_permission(user, "guru") 
+    murid_list = await db.murid.find_many(
+        where={"is_verified": False}
+    )
 
-    if user["role"] != "Admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="❌ Hanya Admin yang boleh menambahkan data guru."
-        )
+    return {
+        "total": len(murid_list),
+        "data": [
+            {
+                "id": m.id,
+                "nama": m.nama,
+                "email": m.email,
+                "nis": m.nis,
+                "nisn": m.nisn,
+                "kelas_id": m.kelas_id,
+                "jurusan_id": m.jurusan_id,
+                "created_at": m.created_at,
+            }
+            for m in murid_list
+        ]
+    }
 
-    try:
-        existing = await db.guru.find_unique(where={"email": guru.email})
-        if existing:
-            raise HTTPException(status_code=400, detail="Email guru sudah terdaftar")
+@router.put("/murid/{murid_id}/verify")
+async def verify_murid(murid_id: int, user=Depends(authorize_access)):
+    if user["role"] != "Guru":
+        raise HTTPException(status_code=403, detail="Akses ditolak")
 
-        created = await db.guru.create(data=guru.dict())
-        return {"message": "✅ Guru berhasil dibuat", "data": created}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gagal membuat guru: {str(e)}")
+    murid = await db.murid.find_unique(where={"id": murid_id})
+    if not murid:
+        raise HTTPException(status_code=404, detail="Murid tidak ditemukan")
 
-# READ — Ambil Semua Data Guru
-@router.get("/", status_code=status.HTTP_200_OK)
-async def get_all_guru(user=Depends(authorize_access)):
-    check_permission(user, "guru")
+    if murid.is_verified:
+        raise HTTPException(status_code=400, detail="Murid sudah diverifikasi")
 
-    # Murid tidak boleh akses daftar guru
-    if user["role"] == "Murid":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="❌ Murid tidak memiliki izin untuk melihat data guru."
-        )
-
-    try:
-        guru_list = await db.guru.find_many(order={"created_at": "desc"})
-        return {"total": len(guru_list), "data": guru_list}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gagal mengambil data guru: {str(e)}")
-
-# READ — Ambil Guru Berdasarkan ID
-@router.get("/{id}", status_code=status.HTTP_200_OK)
-async def get_guru_by_id(id: int, user=Depends(authorize_access)):
-    check_permission(user, "guru")
-
-    # ❌ Murid tidak boleh melihat detail guru
-    if user["role"] == "Murid":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="❌ Murid tidak boleh mengakses data guru."
-        )
-
-    guru = await db.guru.find_unique(where={"id": id})
+    # ambil guru yang login
+    guru = await db.guru.find_unique(where={"email": user["sub"]})
     if not guru:
-        raise HTTPException(status_code=404, detail="❌ Guru tidak ditemukan")
-    return {"data": guru}
+        raise HTTPException(status_code=404, detail="Guru tidak ditemukan")
 
-# UPDATE — Ubah Data Guru (Admin Only)
-@router.put("/{id}", status_code=status.HTTP_200_OK)
-async def update_guru(id: int, data: GuruCreate, user=Depends(authorize_access)):
-    check_permission(user, "guru")
+    await db.murid.update(
+        where={"id": murid_id},
+        data={
+            "is_verified": True,
+            "verified_by": guru.id
+        }
+    )
 
-    if user["role"] != "Admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="❌ Hanya Admin yang boleh memperbarui data guru."
-        )
-
-    existing = await db.guru.find_unique(where={"id": id})
-    if not existing:
-        raise HTTPException(status_code=404, detail="❌ Guru tidak ditemukan")
-
-    try:
-        updated = await db.guru.update(where={"id": id}, data=data.dict())
-        return {"message": "✅ Data guru berhasil diperbarui", "data": updated}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gagal memperbarui data guru: {str(e)}")
-
-# DELETE — Hapus Guru (Admin Only)
-@router.delete("/{id}", status_code=status.HTTP_200_OK)
-async def delete_guru(id: int, user=Depends(authorize_access)):
-    check_permission(user, "guru")
-
-    if user["role"] != "Admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="❌ Hanya Admin yang boleh menghapus guru."
-        )
-
-    existing = await db.guru.find_unique(where={"id": id})
-    if not existing:
-        raise HTTPException(status_code=404, detail="❌ Guru tidak ditemukan")
-
-    try:
-        await db.guru.delete(where={"id": id})
-        return {"message": "🗑️ Guru berhasil dihapus"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gagal menghapus guru: {str(e)}")
+    return {
+        "message": "✅ Murid berhasil diverifikasi",
+        "murid_id": murid_id,
+        "verified_by": guru.nama
+    }

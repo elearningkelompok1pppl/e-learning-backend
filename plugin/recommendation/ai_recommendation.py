@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
 
 # Load env
 load_dotenv()
@@ -9,7 +9,8 @@ GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 if not GEMINI_KEY:
     raise ValueError("❗ GEMINI_API_KEY tidak ditemukan di .env")
 
-genai.configure(api_key=GEMINI_KEY)
+# Client Gemini (SDK BARU)
+client = genai.Client(api_key=GEMINI_KEY)
 
 cluster_desc = {
     0: "Low Performer",
@@ -46,11 +47,12 @@ Format jawaban:
 Bahasa: Indonesia.
 """
 
-    model = genai.GenerativeModel("gemini-2.0-flash")
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=prompt,
+    )
 
-    # pastikan clean output
-    result = response.text.strip()
-    lines = [x.strip("-• ") for x in result.split("\n") if x.strip()]
+    text = response.text.strip()
+    lines = [x.strip("-• ") for x in text.split("\n") if x.strip()]
 
-    return lines[:3]  # hanya ambil 3 poin
+    return lines[:3]
