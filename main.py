@@ -23,15 +23,17 @@ app.add_middleware(
 
 # Prisma Database Client (Single Shared Instance)
 db = Prisma()
-
 @app.on_event("startup")
 async def startup():
-    await db.connect()
+    if not db.is_connected():
+        await db.connect()
     print("✅ Connected to Neon Database!")
+
 
 @app.on_event("shutdown")
 async def shutdown():
-    await db.disconnect()
+    if db.is_connected():
+        await db.disconnect()
     print("❌ Disconnected from Database.")
 
 # --- Authentication Route (JWT) ---
@@ -49,6 +51,7 @@ from routes.absensi_routes import router as absensi_router
 from routes.pkl_routes import router as pkl_router
 from routes.berita_routes import router as berita_router
 from routes.video_routes import router as video_router
+from routes.guru_materi_routes import router as guru_materi_router
 
 # --- New Routes Added ---
 from routes.materi_routes import router as materi_router
@@ -58,6 +61,8 @@ from routes.soal_quiz_routes import router as soal_quiz_router
 from routes.hasil_quiz_routes import router as hasil_quiz_router
 from routes.dashboard_guru_routes import router as dashboard_guru_router
 from routes.beranda_murid_routes import router as beranda_murid_router
+from routes.guru_quiz_routes import router as guru_quiz_route
+from routes.murid_quiz_routes import router as murid_quiz_routes
 # 🔗 Register All Routers
 
 # --- Authentication ---
@@ -75,6 +80,10 @@ app.include_router(absensi_router, prefix="/absensi", tags=["Absensi"])
 app.include_router(pkl_router, prefix="/pkl", tags=["PKL"])
 app.include_router(berita_router, prefix="/berita", tags=["Berita"])
 app.include_router(video_router, prefix="/video", tags=["Video"])
+app.include_router(guru_materi_router, prefix="/guru/materi")
+app.include_router(guru_quiz_route, prefix="/guru/quiz")
+app.include_router(murid_quiz_routes, prefix="/murid/quiz")
+
 
 # --- Educational Content Routes ---
 app.include_router(cluster_router, prefix="/cluster", tags=["Cluster"])
