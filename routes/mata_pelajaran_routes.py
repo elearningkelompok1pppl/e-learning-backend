@@ -1,147 +1,298 @@
-# ===============================================================
-# 📘 routes/mata_pelajaran_routes.py — Manajemen Mata Pelajaran (RBAC Protected)
-# ===============================================================
-
-from fastapi import APIRouter, HTTPException, Depends, status
-from pydantic import BaseModel, Field
-from core.permissions import authorize_access, check_permission
+from fastapi import APIRouter, Depends, HTTPException, Body
+from typing import Optional
+from core.permissions import authorize_access
 from main import db
 
 router = APIRouter(
-    tags=["Mata Pelajaran"],
-    dependencies=[Depends(authorize_access)]  # ✅ Semua endpoint butuh JWT
+    tags=["Guru - Mata Pelajaran"],
+    dependencies=[Depends(authorize_access)]
 )
 
-# ===============================================================
-# 📋 SCHEMA: Data Mata Pelajaran
-# ===============================================================
-class MataPelajaranCreate(BaseModel):
-    kode_mapel: str | None = Field(default=None, description="Kode unik mapel, contoh: RPL101")
-    nama_mapel: str = Field(..., description="Nama mata pelajaran, contoh: Algoritma dan Pemrograman")
-    deskripsi: str | None = Field(default=None, description="Deskripsi singkat mata pelajaran")
-    kategori: str = Field(default="Umum", description="Kategori pelajaran, contoh: Produktif / Umum")
-    tingkat_kesulitan: str = Field(default="Pemula", description="Tingkat kesulitan: Pemula, Menengah, Lanjut")
-    jurusan_id: int | None = Field(default=None, description="ID jurusan yang terkait (optional)")
-    guru_id: int | None = Field(default=None, description="ID guru pengajar (optional)")
+# ===============================
+# CREATE MATA PELAJARAN (GURU)
+# ===============================
+@router.post("")
+async def create_mata_pelajaran(
+    kode_mapel: Optional[str] = Body(None),
+    nama_mapel: str = Body(...),
+    deskripsi: Optional[str] = Body(None),
+    kategori: Optional[str] = Body("Umum"),
+    tingkat_kesulitan: Optional[str] = Body("Pemula"),
+    jurusan_id: Optional[int] = Body(None),
+    kelas_id: int = Body(...),  # ✅ NUMERIK
+    user=Depends(authorize_access)
+):
+    if user["role"] != "Guru":
+        raise HTTPException(status_code=403, detail="Akses ditolak")
 
+    guru = await db.guru.find_unique(where={"email": user["sub"]})
+    if not guru:
+        raise HTTPException(status_code=404, detail="Guru tidak ditemukan")
 
-# ===============================================================
-# 🧩 CREATE — Tambah Mata Pelajaran (Hanya Admin & Guru)
-# ===============================================================
-@router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_mata_pelajaran(data: MataPelajaranCreate, user=Depends(authorize_access)):
-    check_permission(user, "mata_pelajaran")
+    # ✅ validasi kelas
+    kelas = await db.kelas.find_unique(where={"id": kelas_id})
+    if not kelas:
+        raise HTTPException(status_code=404, detail="Kelas tidak ditemukan")
 
-    # 🔒 Murid tidak boleh create
-    if user["role"] == "Murid":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="❌ Murid tidak memiliki izin untuk menambahkan mata pelajaran."
-        )
+    # ✅ validasi jurusan (opsional)
+    if jurusan_id:
+        jurusan = await db.jurusan.find_unique(where={"id": jurusan_id})
+        if not jurusan:
+            raise HTTPException(status_code=404, detail="Jurusan tidak ditemukan")
 
-    # ✅ Admin & Guru boleh
-    try:
-        created = await db.mata_pelajaran.create(data=data.dict())
-        return {"message": "✅ Mata pelajaran berhasil dibuat", "data": created}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gagal membuat mata pelajaran: {str(e)}")
-
-
-# ===============================================================
-# 📜 READ — Ambil Semua Mata Pelajaran (Admin, Guru, Murid)
-# ===============================================================
-@router.get("/", status_code=status.HTTP_200_OK)
-async def get_all_mata_pelajaran(user=Depends(authorize_access)):
-    check_permission(user, "mata_pelajaran")
-
-    try:
-        if user["role"] == "Admin":
-            # Admin: Semua mapel
-            mapel_list = await db.mata_pelajaran.find_many(include={"guru": True, "jurusan": True})
-
-        elif user["role"] == "Guru":
-            # Guru: Mapel yang dia ajar
-            guru = await db.guru.find_unique(where={"email": user["sub"]})
-            if not guru:
-                raise HTTPException(status_code=404, detail="Guru tidak ditemukan")
-            mapel_list = await db.mata_pelajaran.find_many(
-                where={"guru_id": guru.id},
-                include={"guru": True, "jurusan": True}
-            )
-
-        else:
-            # Murid: Semua mapel aktif (read-only)
-            mapel_list = await db.mata_pelajaran.find_many(include={"guru": True, "jurusan": True})
-
-        return {"total": len(mapel_list), "data": mapel_list}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gagal mengambil data mata pelajaran: {str(e)}")
-
-
-# ===============================================================
-# 🔍 READ — Ambil Mata Pelajaran Berdasarkan ID (Semua Role)
-# ===============================================================
-@router.get("/{id}", status_code=status.HTTP_200_OK)
-async def get_mata_pelajaran(id: int, user=Depends(authorize_access)):
-    check_permission(user, "mata_pelajaran")
-
-    mapel = await db.mata_pelajaran.find_unique(
-        where={"id": id},
-        include={"guru": True, "jurusan": True}
+    mapel = await db.mata_pelajaran.create(
+        data={
+            "kode_mapel": kode_mapel,
+            "nama_mapel": nama_mapel,
+            "deskripsi": deskripsi,
+            "kategori": kategori,
+            "tingkat_kesulitan": tingkat_kesulitan,
+            "jurusan_id": jurusan_id,
+            "kelas_id": kelas_id,
+            "guru_id": guru.id,
+        }
     )
 
+    return {
+        "message": "Mata pelajaran berhasil ditambahkan",
+        "data": mapel
+    }
+
+# ===============================
+# GET MATA PELAJARAN MURID
+# ===============================
+@router.get("/murid", status_code=200)
+async def get_mata_pelajaran_murid(user=Depends(authorize_access)):
+    if user["role"] != "Murid":
+        raise HTTPException(status_code=403, detail="Akses ditolak")
+
+    murid = await db.murid.find_unique(
+        where={"email": user["sub"]}
+    )
+    if not murid:
+        raise HTTPException(status_code=404, detail="Murid tidak ditemukan")
+
+    if not murid.kelas_id:
+        return {"total": 0, "data": []}
+
+    mapel_list = await db.mata_pelajaran.find_many(
+        where={"kelas_id": murid.kelas_id},
+        include={
+            "kelas": True,
+            "jurusan": True,
+            "guru": True
+        },
+        order={"created_at": "desc"}
+    )
+
+    return {
+        "total": len(mapel_list),
+        "data": mapel_list
+    }
+
+# ===============================
+# GET MATA PELAJARAN GURU
+# ===============================
+@router.get("", status_code=200)
+async def get_mata_pelajaran_guru(user=Depends(authorize_access)):
+    if user["role"] != "Guru":
+        raise HTTPException(status_code=403, detail="Akses ditolak")
+
+    guru = await db.guru.find_unique(
+        where={"email": user["sub"]}
+    )
+    if not guru:
+        raise HTTPException(status_code=404, detail="Guru tidak ditemukan")
+
+    mapel_list = await db.mata_pelajaran.find_many(
+        where={"guru_id": guru.id},
+        include={
+            "kelas": True,
+            "jurusan": True,
+            "guru": True
+        },
+        order={"created_at": "desc"}
+    )
+
+    return {
+        "total": len(mapel_list),
+        "data": mapel_list
+    }
+from fastapi import APIRouter, Depends, HTTPException, Body
+from typing import Optional
+from core.permissions import authorize_access
+from main import db
+
+router = APIRouter(
+    tags=["Guru - Mata Pelajaran"],
+    dependencies=[Depends(authorize_access)]
+)
+
+# ===============================
+# CREATE MATA PELAJARAN (GURU)
+# ===============================
+@router.post("")
+async def create_mata_pelajaran(
+    kode_mapel: Optional[str] = Body(None),
+    nama_mapel: str = Body(...),
+    deskripsi: Optional[str] = Body(None),
+    kategori: Optional[str] = Body("Umum"),
+    tingkat_kesulitan: Optional[str] = Body("Pemula"),
+    jurusan_id: Optional[int] = Body(None),
+    kelas_id: int = Body(...),  # ✅ NUMERIK
+    user=Depends(authorize_access)
+):
+    if user["role"] != "Guru":
+        raise HTTPException(status_code=403, detail="Akses ditolak")
+
+    guru = await db.guru.find_unique(where={"email": user["sub"]})
+    if not guru:
+        raise HTTPException(status_code=404, detail="Guru tidak ditemukan")
+
+    # ✅ validasi kelas
+    kelas = await db.kelas.find_unique(where={"id": kelas_id})
+    if not kelas:
+        raise HTTPException(status_code=404, detail="Kelas tidak ditemukan")
+
+    # ✅ validasi jurusan (opsional)
+    if jurusan_id:
+        jurusan = await db.jurusan.find_unique(where={"id": jurusan_id})
+        if not jurusan:
+            raise HTTPException(status_code=404, detail="Jurusan tidak ditemukan")
+
+    mapel = await db.mata_pelajaran.create(
+        data={
+            "kode_mapel": kode_mapel,
+            "nama_mapel": nama_mapel,
+            "deskripsi": deskripsi,
+            "kategori": kategori,
+            "tingkat_kesulitan": tingkat_kesulitan,
+            "jurusan_id": jurusan_id,
+            "kelas_id": kelas_id,
+            "guru_id": guru.id,
+        }
+    )
+
+    return {
+        "message": "Mata pelajaran berhasil ditambahkan",
+        "data": mapel
+    }
+
+# ===============================
+# GET MATA PELAJARAN MURID
+# ===============================
+@router.get("/murid", status_code=200)
+async def get_mata_pelajaran_murid(user=Depends(authorize_access)):
+    if user["role"] != "Murid":
+        raise HTTPException(status_code=403, detail="Akses ditolak")
+
+    murid = await db.murid.find_unique(
+        where={"email": user["sub"]}
+    )
+    if not murid:
+        raise HTTPException(status_code=404, detail="Murid tidak ditemukan")
+
+    if not murid.kelas_id:
+        return {"total": 0, "data": []}
+
+    mapel_list = await db.mata_pelajaran.find_many(
+        where={"kelas_id": murid.kelas_id},
+        include={
+            "kelas": True,
+            "jurusan": True,
+            "guru": True
+        },
+        order={"created_at": "desc"}
+    )
+
+    return {
+        "total": len(mapel_list),
+        "data": mapel_list
+    }
+
+# ===============================
+# GET MATA PELAJARAN GURU
+# ===============================
+@router.get("", status_code=200)
+async def get_mata_pelajaran_guru(user=Depends(authorize_access)):
+    if user["role"] != "Guru":
+        raise HTTPException(status_code=403, detail="Akses ditolak")
+
+    guru = await db.guru.find_unique(
+        where={"email": user["sub"]}
+    )
+    if not guru:
+        raise HTTPException(status_code=404, detail="Guru tidak ditemukan")
+
+    mapel_list = await db.mata_pelajaran.find_many(
+        where={"guru_id": guru.id},
+        include={
+            "kelas": True,
+            "jurusan": True,
+            "guru": True
+        },
+        order={"created_at": "desc"}
+    )
+
+    return {
+        "total": len(mapel_list),
+        "data": mapel_list
+    }
+# ===============================
+# DELETE MATA PELAJARAN (GURU)
+# ===============================
+@router.delete("/{mapel_id}", status_code=200)
+async def delete_mata_pelajaran(
+    mapel_id: int,
+    user=Depends(authorize_access)
+):
+    if user["role"] != "Guru":
+        raise HTTPException(403, "Akses ditolak")
+
+    guru = await db.guru.find_unique(where={"email": user["sub"]})
+    if not guru:
+        raise HTTPException(404, "Guru tidak ditemukan")
+
+    mapel = await db.mata_pelajaran.find_unique(where={"id": mapel_id})
     if not mapel:
-        raise HTTPException(status_code=404, detail="❌ Mata pelajaran tidak ditemukan")
+        raise HTTPException(404, "Mata pelajaran tidak ditemukan")
 
-    return {"data": mapel}
+    if mapel.guru_id != guru.id:
+        raise HTTPException(403, "Tidak berhak menghapus")
 
+    # 1️⃣ hapus hasil quiz
+    await db.hasil_quiz.delete_many(
+        where={"mata_pelajaran_id": mapel_id}
+    )
 
-# ===============================================================
-# ✏️ UPDATE — Ubah Mata Pelajaran (Hanya Admin & Guru)
-# ===============================================================
-@router.put("/{id}", status_code=status.HTTP_200_OK)
-async def update_mata_pelajaran(id: int, data: MataPelajaranCreate, user=Depends(authorize_access)):
-    check_permission(user, "mata_pelajaran")
+    # 2️⃣ ambil semua quiz
+    quizzes = await db.quiz.find_many(
+        where={"mata_pelajaran_id": mapel_id}
+    )
+    quiz_ids = [q.id for q in quizzes]
 
-    # 🔒 Murid tidak boleh update
-    if user["role"] == "Murid":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="❌ Murid tidak memiliki izin untuk memperbarui mata pelajaran."
+    # 3️⃣ hapus soal quiz
+    if quiz_ids:
+        await db.soal_quiz.delete_many(
+            where={"quiz_id": {"in": quiz_ids}}
         )
 
-    existing = await db.mata_pelajaran.find_unique(where={"id": id})
-    if not existing:
-        raise HTTPException(status_code=404, detail="❌ Mata pelajaran tidak ditemukan")
+    # 4️⃣ hapus quiz
+    await db.quiz.delete_many(
+        where={"mata_pelajaran_id": mapel_id}
+    )
 
-    try:
-        updated = await db.mata_pelajaran.update(where={"id": id}, data=data.dict())
-        return {"message": "✅ Mata pelajaran berhasil diperbarui", "data": updated}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gagal memperbarui mata pelajaran: {str(e)}")
+    # 5️⃣ hapus materi
+    await db.materi.delete_many(
+        where={"mata_pelajaran_id": mapel_id}
+    )
 
+    # 6️⃣ terakhir hapus mapel
+    await db.mata_pelajaran.delete(
+        where={"id": mapel_id}
+    )
 
-# ===============================================================
-# 🗑️ DELETE — Hapus Mata Pelajaran (Hanya Admin & Guru)
-# ===============================================================
-@router.delete("/{id}", status_code=status.HTTP_200_OK)
-async def delete_mata_pelajaran(id: int, user=Depends(authorize_access)):
-    check_permission(user, "mata_pelajaran")
-
-    # 🔒 Murid tidak boleh delete
-    if user["role"] == "Murid":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="❌ Murid tidak memiliki izin untuk menghapus mata pelajaran."
-        )
-
-    existing = await db.mata_pelajaran.find_unique(where={"id": id})
-    if not existing:
-        raise HTTPException(status_code=404, detail="❌ Mata pelajaran tidak ditemukan")
-
-    try:
-        await db.mata_pelajaran.delete(where={"id": id})
-        return {"message": "🗑️ Mata pelajaran berhasil dihapus"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gagal menghapus mata pelajaran: {str(e)}")
+    return {
+        "message": "Mata pelajaran & seluruh data terkait berhasil dihapus",
+        "id": mapel_id
+    }

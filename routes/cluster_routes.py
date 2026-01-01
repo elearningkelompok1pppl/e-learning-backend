@@ -4,16 +4,18 @@ from plugin.cluster.cluster_predictor import predict_cluster_for_student
 from plugin.recommendation.ai_recommendation import generate_recommendation_ai
 from main import db
 
-router = APIRouter(tags=["Cluster"],
-                   dependencies=[Depends(authorize_access)])
+router = APIRouter(
+    tags=["Cluster"]
+)
 
+# =============================
+# 🔥 GET STATUS SEMUA MURID
+# =============================
 @router.get("/status")
 async def get_cluster(user=Depends(authorize_access)):
 
-    # RBAC proteksi module cluster
     check_permission(user, "cluster")
 
-    # role check
     if user["role"] != "Guru":
         raise HTTPException(status_code=403, detail="❌ Akses khusus Guru")
 
@@ -44,7 +46,6 @@ async def get_cluster(user=Depends(authorize_access)):
         }
 
         cluster = predict_cluster_for_student(data)
-
         recommendation = generate_recommendation_ai(
             student_name=m.nama,
             cluster_label=cluster,
@@ -55,7 +56,66 @@ async def get_cluster(user=Depends(authorize_access)):
             "murid_id": m.id,
             "nama": m.nama,
             "cluster": cluster,
-            "recommendation": recommendation
+            "recommendation": recommendation  # <-- list of 3 items
         })
 
-    return output
+    return {
+        "count": len(output),
+        "data": output
+    }
+
+
+# =============================
+# 🔥 GET STATUS MURID BY ID
+# =============================
+@router.get("/status/{id}")
+async def get_cluster_by_id(id: int, user=Depends(authorize_access)):
+
+    check_permission(user, "cluster")
+
+    if user["role"] != "Guru":
+        raise HTTPException(status_code=403, detail="❌ Akses khusus Guru")
+
+    murid = await db.murid.find_unique(
+        where={"id": id},
+        include={"rapor": True}
+    )
+
+    if not murid:
+        raise HTTPException(status_code=404, detail="❌ Murid tidak ditemukan")
+
+    rapor = murid.rapor[0] if murid.rapor else None
+    if not rapor:
+        raise HTTPException(status_code=404, detail="❌ Murid ini belum memiliki data rapor")
+
+    data = {
+        "nilai_akhir": rapor.nilai_akhir or 0,
+        "nilai_tugas": rapor.nilai_tugas or 0,
+        "nilai_quiz": rapor.nilai_quiz or 0,
+        "nilai_uts": rapor.nilai_uts or 0,
+        "nilai_uas": rapor.nilai_uas or 0,
+        "total_hadir": 110,
+        "total_alpha": 3,
+        "total_izin": 2,
+        "tingkat_kehadiran": 93.5,
+        "jumlah_tugas": 12,
+        "persentase_pengumpulan": 90,
+        "total_quiz": 6,
+        "rata_nilai_quiz": rapor.nilai_quiz or 0,
+        "total_aktivitas": 20,
+        "total_durasi_belajar": 300
+    }
+
+    cluster = predict_cluster_for_student(data)
+    recommendation = generate_recommendation_ai(
+        student_name=murid.nama,
+        cluster_label=cluster,
+        data=data
+    )
+
+    return {
+        "murid_id": murid.id,
+        "nama": murid.nama,
+        "cluster": cluster,
+        "recommendation": recommendation
+    }

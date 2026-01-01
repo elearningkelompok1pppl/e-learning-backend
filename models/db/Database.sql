@@ -170,6 +170,7 @@ CREATE TABLE IF NOT EXISTS mata_pelajaran (
     tingkat_kesulitan VARCHAR(20) DEFAULT 'Pemula' CHECK (tingkat_kesulitan IN ('Pemula', 'Menengah', 'Lanjut')),
     jurusan_id INTEGER REFERENCES jurusan(id),
     guru_id INTEGER REFERENCES guru(id),
+    kelas_id INTEGER REFERENCES kelas(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -1,3 +1,14 @@
-".venv" 
+# Python
+venv/
+.env
+__pycache__/
+*.pyc
 
-/generated/prisma
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+generated/prisma
