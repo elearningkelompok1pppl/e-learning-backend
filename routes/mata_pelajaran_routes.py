@@ -247,33 +247,52 @@ async def delete_mata_pelajaran(
     user=Depends(authorize_access)
 ):
     if user["role"] != "Guru":
-        raise HTTPException(status_code=403, detail="Akses ditolak")
+        raise HTTPException(403, "Akses ditolak")
 
-    guru = await db.guru.find_unique(
-        where={"email": user["sub"]}
-    )
+    guru = await db.guru.find_unique(where={"email": user["sub"]})
     if not guru:
-        raise HTTPException(status_code=404, detail="Guru tidak ditemukan")
+        raise HTTPException(404, "Guru tidak ditemukan")
 
-    mapel = await db.mata_pelajaran.find_unique(
-        where={"id": mapel_id}
-    )
+    mapel = await db.mata_pelajaran.find_unique(where={"id": mapel_id})
     if not mapel:
-        raise HTTPException(status_code=404, detail="Mata pelajaran tidak ditemukan")
+        raise HTTPException(404, "Mata pelajaran tidak ditemukan")
 
-    # 🔐 pastikan mapel milik guru tsb
     if mapel.guru_id != guru.id:
-        raise HTTPException(
-            status_code=403,
-            detail="Anda tidak berhak menghapus mata pelajaran ini"
+        raise HTTPException(403, "Tidak berhak menghapus")
+
+    # 1️⃣ hapus hasil quiz
+    await db.hasil_quiz.delete_many(
+        where={"mata_pelajaran_id": mapel_id}
+    )
+
+    # 2️⃣ ambil semua quiz
+    quizzes = await db.quiz.find_many(
+        where={"mata_pelajaran_id": mapel_id}
+    )
+    quiz_ids = [q.id for q in quizzes]
+
+    # 3️⃣ hapus soal quiz
+    if quiz_ids:
+        await db.soal_quiz.delete_many(
+            where={"quiz_id": {"in": quiz_ids}}
         )
 
+    # 4️⃣ hapus quiz
+    await db.quiz.delete_many(
+        where={"mata_pelajaran_id": mapel_id}
+    )
+
+    # 5️⃣ hapus materi
+    await db.materi.delete_many(
+        where={"mata_pelajaran_id": mapel_id}
+    )
+
+    # 6️⃣ terakhir hapus mapel
     await db.mata_pelajaran.delete(
         where={"id": mapel_id}
     )
 
     return {
-        "message": "Mata pelajaran berhasil dihapus 🗑️",
+        "message": "Mata pelajaran & seluruh data terkait berhasil dihapus",
         "id": mapel_id
     }
-

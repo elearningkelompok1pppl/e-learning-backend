@@ -119,3 +119,33 @@ async def get_soal_by_quiz_guru(
         "total_poin": total_bobot,
         "data": soal
     }
+
+@router.put("/{quiz_id}/publish")
+async def publish_quiz(
+    quiz_id: int,
+    tanggal_mulai: datetime,
+    tanggal_selesai: datetime,
+    user=Depends(authorize_access)
+):
+    if user["role"] != "Guru":
+        raise HTTPException(403, "Akses ditolak")
+
+    guru = await db.guru.find_unique(where={"email": user["sub"]})
+
+    quiz = await db.quiz.find_unique(where={"id": quiz_id})
+    if not quiz or quiz.guru_id != guru.id:
+        raise HTTPException(404, "Quiz tidak ditemukan")
+
+    updated = await db.quiz.update(
+        where={"id": quiz_id},
+        data={
+            "status": "Active",
+            "tanggal_mulai": tanggal_mulai,
+            "tanggal_selesai": tanggal_selesai
+        }
+    )
+
+    return {
+        "message": "Quiz berhasil dipublish",
+        "data": updated
+    }

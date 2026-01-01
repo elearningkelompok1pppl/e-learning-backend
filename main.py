@@ -61,8 +61,9 @@ from routes.soal_quiz_routes import router as soal_quiz_router
 from routes.hasil_quiz_routes import router as hasil_quiz_router
 from routes.dashboard_guru_routes import router as dashboard_guru_router
 from routes.beranda_murid_routes import router as beranda_murid_router
-from routes.guru_quiz_routes import router as guru_quiz_route
-from routes.murid_quiz_routes import router as murid_quiz_routes
+from routes.guru_quiz_routes import router as guru_quiz_router
+from routes.murid_quiz_routes import router as murid_quiz_router
+from routes.murid_materi_routes import router as murid_materi_router
 # 🔗 Register All Routers
 
 # --- Authentication ---
@@ -81,8 +82,10 @@ app.include_router(pkl_router, prefix="/pkl", tags=["PKL"])
 app.include_router(berita_router, prefix="/berita", tags=["Berita"])
 app.include_router(video_router, prefix="/video", tags=["Video"])
 app.include_router(guru_materi_router, prefix="/guru/materi")
-app.include_router(guru_quiz_route, prefix="/guru/quiz")
-app.include_router(murid_quiz_routes, prefix="/murid/quiz")
+app.include_router(guru_quiz_router, prefix="/guru/quiz")
+app.include_router(murid_materi_router, prefix="/murid/materi")
+app.include_router(murid_quiz_router, prefix="/murid/quiz")
+
 
 
 # --- Educational Content Routes ---
