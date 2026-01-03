@@ -20,7 +20,6 @@ app.add_middleware(
     allow_methods=["*"],  
     allow_headers=["*"],     
 )
-
 # Prisma Database Client (Single Shared Instance)
 db = Prisma()
 @app.on_event("startup")
@@ -64,6 +63,8 @@ from routes.beranda_murid_routes import router as beranda_murid_router
 from routes.guru_quiz_routes import router as guru_quiz_router
 from routes.murid_quiz_routes import router as murid_quiz_router
 from routes.murid_materi_routes import router as murid_materi_router
+from routes.murid_absensi_routes import router as murid_absensi_router
+from routes.guru_absensi_routes import router as guru_absensi_router
 # 🔗 Register All Routers
 
 # --- Authentication ---
@@ -85,6 +86,8 @@ app.include_router(guru_materi_router, prefix="/guru/materi")
 app.include_router(guru_quiz_router, prefix="/guru/quiz")
 app.include_router(murid_materi_router, prefix="/murid/materi")
 app.include_router(murid_quiz_router, prefix="/murid/quiz")
+app.include_router(murid_absensi_router, prefix="/murid/absensi")
+app.include_router(guru_absensi_router, prefix="/guru/absensi")
 
 
 
